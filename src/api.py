@@ -1,33 +1,39 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from src.predict_model import predict  # Importer la fonction de prédiction
+from flask import Flask, request, jsonify
+from predict_model import predict  # Assurez-vous que le chemin vers votre fonction de prédiction est correct
 
-# Créer un modèle Pydantic pour valider les données d'entrée
-class CarFeatures(BaseModel):
-    weight: float
-    acceleration: float
-    displacement: float
-    cylinders: int
-    model_year: int
-    origin: int
-    horsepower: float
+app = Flask(__name__)
 
-# Créer l'application FastAPI
-app = FastAPI()
+# Fonction pour valider et traiter les données d'entrée
+def validate_car_features(data):
+    required_fields = ["weight", "acceleration", "displacement", "cylinders", "model_year", "origin", "horsepower"]
+    # Vérifier que toutes les clés nécessaires sont présentes
+    for field in required_fields:
+        if field not in data:
+            return f"Le champ {field} est requis.", 400  # Erreur 400 si une clé manque
+    return None, None
+
+# Route pour la racine ("/")
+@app.route("/", methods=["GET"])
+def read_root():
+    return jsonify({"message": "Bienvenue sur l'API de prédiction de consommation de carburant!"})
 
 # Route pour effectuer une prédiction
-@app.post("/predict/")
-def predict_car(features: CarFeatures):
-    # Convertir les données d'entrée en dictionnaire
-    features_dict = features.dict()
+@app.route("/predict/", methods=["POST"])
+def predict_car():
+    # Obtenir les données JSON de la requête
+    data = request.get_json()
+    
+    # Valider les données d'entrée
+    error_message, status_code = validate_car_features(data)
+    if error_message:
+        return jsonify({"error": error_message}), status_code
     
     # Appeler la fonction de prédiction
-    prediction = predict(features_dict)
+    prediction = predict(data)
     
     # Retourner les résultats de la prédiction
-    return prediction
+    return jsonify(prediction)
 
-# Pour exécuter l'API avec uvicorn (si exécuté directement en ligne de commande)
+# Lancer l'application Flask
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.run(debug=True, host="0.0.0.0", port=8000)

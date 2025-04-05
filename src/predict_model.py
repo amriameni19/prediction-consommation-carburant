@@ -1,31 +1,47 @@
 import joblib
 import numpy as np
+import os
+import pandas as pd
 
-# Charger les modèles sauvegardés
-model_class = joblib.load('models/scaler.pkl')
-model_reg = joblib.load('models/rf_reg_model.pkl')
+# Obtenir le chemin absolu
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, 'models', 'rf_reg_model.pkl')
+SCALER_PATH = os.path.join(BASE_DIR, 'models', 'scaler.pkl')
+
+# Charger les modèles
+try:
+    model_reg = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+except Exception as e:
+    raise Exception(f"Erreur lors du chargement des modèles: {str(e)}")
 
 def predict(features):
-    # Convertir les caractéristiques du véhicule en un tableau numpy
-    features_array = np.array([[
-        features['weight'],
-        features['acceleration'],
-        features['displacement'],
-        features['cylinders'],
-        features['model_year'],
-        features['origin'],
-        features['horsepower']
-    ]])
-    
-    # Prédire la classe (faible ou élevé)
-    consumption_class = model_class.predict(features_array)[0]
-    consumption_label = "Faible" if consumption_class == 1 else "Élevée"
-    
-    # Prédire la consommation de carburant réelle (en MPG)
-    fuel_consumption = model_reg.predict(features_array)[0]
-    
-    # Retourner les deux résultats
-    return {
-        "consommation": consumption_label,
-        "consommation_reelle": fuel_consumption
-    }
+    try:
+        features_df = pd.DataFrame([[ 
+            features['weight'],
+            features['acceleration'],
+            features['displacement'],
+            features['cylinders'],
+            features['model_year'],
+            features['horsepower']
+        ]],columns=['weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower'])
+
+        # Standardisation des features
+
+        features_scaled = scaler.transform(features_df)
+
+        # Prédiction
+        fuel_consumption_mpg = model_reg.predict(features_scaled)[0]
+
+       # Conversion de MPG à L/100km
+        fuel_consumption_l_100km = 235.215 / fuel_consumption_mpg
+
+        return {
+            "consommation_reelle_mpg": float(fuel_consumption_mpg),
+            "consommation_reelle_l_100km": float(fuel_consumption_l_100km),
+            "unite_mpg": "MPG",
+            "unite_l_100km": "L/100km",
+            "commentaire_conversion": f"Conversion : 235.215 / {fuel_consumption_mpg} MPG = {fuel_consumption_l_100km:.2f} L/100km"
+        }
+    except Exception as e:
+        raise Exception(f"Erreur lors de la prédiction: {str(e)}")

@@ -100,3 +100,25 @@ rf_model = mlflow.sklearn.load_model("runs:/ba28e042d2634fb7adb13b83da0ff4c7/rf_
 scaler_model = mlflow.sklearn.load_model("runs:/ba28e042d2634fb7adb13b83da0ff4c7/scaler_model")
 
 print("✅ Modèles chargés avec succès !")
+
+
+
+
+
+import socket
+
+def is_local_environment():
+    return socket.gethostname() == "ASUS"
+
+if is_local_environment():
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("Prediction_Consommation_Carburant")
+
+    with mlflow.start_run():
+        mlflow.log_param("n_estimators", 100)
+        mlflow.log_param("max_depth", 10)
+        mlflow.sklearn.log_model(rf_reg, "rf_reg_model")
+        mlflow.sklearn.log_model(scaler, "scaler_model")
+        mlflow.log_artifact(os.path.join(models_dir, 'rf_reg_model.pkl'))
+        mlflow.log_artifact(os.path.join(models_dir, 'scaler.pkl'))
+        print("✅ Modèles et artefacts enregistrés avec succès dans MLflow ! 🚀")
