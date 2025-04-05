@@ -1,0 +1,23 @@
+name: CI/CD MLOps
+on: [push]
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Installer Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Installer dépendances
+        run: pip install -r requirements.txt
+      - name: Exécuter le pipeline
+        run: python src/train_model.py
+        env:
+          MLFLOW_TRACKING_URI: http://localhost:5000
+          MLFLOW_EXPERIMENT_NAME: Prediction_Consommation_Carburant
+
+      - name: Commit model and artifacts to MLflow
+        run: 
+        echo "Logging model to MLflow"
+        continue-on-error: true
