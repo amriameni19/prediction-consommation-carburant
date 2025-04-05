@@ -1,0 +1,27 @@
+
+services:
+  mlflow:
+    image: mlflow/mlflow:2.6.1  # Utiliser une version stable de MLflow
+    ports:
+      - "5000:5000"  # Assure-toi que le port 5000 est exposé pour l'accès web
+    environment:
+      - MLFLOW_TRACKING_URI=http://localhost:5000  # Utiliser ce port pour la communication
+    volumes:
+      - ./mlruns:/mlflow/mlruns  # Montre un dossier local pour sauvegarder les logs de MLflow
+    networks:
+      - mlflow_network  # Utilise un réseau pour la communication entre les conteneurs
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mlflow_db
+    ports:
+      - "5432:5432"
+    networks:
+      - mlflow_network
+
+networks:
+  mlflow_network:
+    driver: bridge
