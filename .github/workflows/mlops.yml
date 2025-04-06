@@ -1,15 +1,38 @@
 name: CI/CD MLOps
-on: [push]
+
+on:
+  push:
+    branches:
+      - main  # Utilise "main" si ta branche par défaut est main, sinon utilise "master"
+
 jobs:
   train:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - name: Installer Python
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+      
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - name: Installer dépendances
+
+      - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Exécuter le pipeline
-        run: python src/train.
+
+      - name: Run the training pipeline
+        run: python src/train_model.py
+        env:
+          MLFLOW_TRACKING_URI: http://localhost:5000
+          MLFLOW_EXPERIMENT_NAME: Prediction_Consommation_Carburant
+
+      - name: Commit model and artifacts to MLflow
+        run: |
+          echo "Logging model to MLflow"
+          # Exemple de commandes pour enregistrer un modèle dans MLflow
+          mlflow.log_artifact "models/rf_reg_model.pkl"  # Enregistre ton modèle RandomForest
+          mlflow.log_artifact "models/scaler.pkl"        # Enregistre ton scaler
+          mlflow.log_model rf_reg_model "rf_reg_model"   # Enregistre le modèle dans MLflow
+          mlflow.log_model scaler "scaler_model"         # Enregistre le scaler dans MLflow
+        continue-on-error: true
