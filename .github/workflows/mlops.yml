@@ -34,7 +34,7 @@ jobs:
           python -c "import mlflow; print('MLflow version:', mlflow.__version__)"
 
       - name: Run the training pipeline
-        run: python Prediction_Consommation-de-carburant/src/train_model.py
+        run: python src/train_model.py
         working-directory: ./Prediction_Consommation-de-carburant/src
 
         env:
