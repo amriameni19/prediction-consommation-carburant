@@ -18,21 +18,23 @@ jobs:
         with:
           python-version: 3.9
 
-
-      - name: Clear cache
+      - name: Clear pip cache
         run: |
-              rm -rf ~/.cache/pip
+          rm -rf ~/.cache/pip
+
       - name: List files in src directory
         run: ls -R Prediction_Consommation-de-carburant/src/
 
-
-
       - name: Install dependencies
-        run: pip install -r Prediction_Consommation-de-carburant/src/requirements.txt
+        run: |
+          pip install -r Prediction_Consommation-de-carburant/src/requirements.txt
 
+      - name: Verify installation of mlflow
+        run: |
+          python -c "import mlflow; print('MLflow version:', mlflow.__version__)"
 
       - name: Run the training pipeline
-        run: python train_model.py
+        run: python src/train_model.py
         working-directory: ./Prediction_Consommation-de-carburant/src
 
         env:
@@ -42,7 +44,6 @@ jobs:
       - name: Commit model and artifacts to MLflow
         run: |
           echo "Logging model to MLflow"
-          # Exemple de commandes pour enregistrer un modèle dans MLflow
           mlflow.log_artifact "models/rf_reg_model.pkl"  # Enregistre ton modèle RandomForest
           mlflow.log_artifact "models/scaler.pkl"        # Enregistre ton scaler
           mlflow.log_model rf_reg_model "rf_reg_model"   # Enregistre le modèle dans MLflow
