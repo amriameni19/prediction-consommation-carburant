@@ -21,4 +21,4 @@ EXPOSE 5000
 WORKDIR $MLFLOW_HOME
 
 # Lancer MLflow en mode serveur
-CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]                                                                         

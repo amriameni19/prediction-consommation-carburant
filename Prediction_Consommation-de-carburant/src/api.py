@@ -1,38 +1,36 @@
 from flask import Flask, request, jsonify
-from predict_model import predict  # Assurez-vous que le chemin vers votre fonction de prédiction est correct
+from predict_model import predict
 
 app = Flask(__name__)
 
-# Fonction pour valider et traiter les données d'entrée
+# Fonction de validation des données entrantes
 def validate_car_features(data):
-    required_fields = ["weight", "acceleration", "displacement", "cylinders", "model_year", "origin", "horsepower"]
-    # Vérifier que toutes les clés nécessaires sont présentes
+    required_fields = ["weight", "acceleration", "displacement", "cylinders", "model_year", "horsepower"]
     for field in required_fields:
         if field not in data:
-            return f"Le champ {field} est requis.", 400  # Erreur 400 si une clé manque
+            return f"Le champ {field} est requis.", 400
     return None, None
 
-# Route pour la racine ("/")
+# Route d'accueil
 @app.route("/", methods=["GET"])
 def read_root():
     return jsonify({"message": "Bienvenue sur l'API de prédiction de consommation de carburant!"})
 
-# Route pour effectuer une prédiction
+# Route pour la prédiction
 @app.route("/predict/", methods=["POST"])
 def predict_car():
-    # Obtenir les données JSON de la requête
     data = request.get_json()
-    
-    # Valider les données d'entrée
+
+    # Vérifier les données
     error_message, status_code = validate_car_features(data)
     if error_message:
         return jsonify({"error": error_message}), status_code
-    
-    # Appeler la fonction de prédiction
-    prediction = predict(data)
-    
-    # Retourner les résultats de la prédiction
-    return jsonify(prediction)
+
+    try:
+        prediction = predict(data)
+        return jsonify(prediction)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Lancer l'application Flask
 if __name__ == "__main__":

@@ -1,15 +1,14 @@
-
 services:
   mlflow:
-    image: mlflow/mlflow:2.6.1  # Utiliser une version stable de MLflow
+    build: .                # <--- build à partir de ton Dockerfile
     ports:
-      - "5000:5000"  # Assure-toi que le port 5000 est exposé pour l'accès web
-    environment:
-      - MLFLOW_TRACKING_URI=http://localhost:5000  # Utiliser ce port pour la communication
+      - "5000:5000"
     volumes:
-      - ./mlruns:/mlflow/mlruns  # Montre un dossier local pour sauvegarder les logs de MLflow
+      - ./mlruns:/mlflow/mlruns
     networks:
-      - mlflow_network  # Utilise un réseau pour la communication entre les conteneurs
+      - mlflow_network
+    depends_on:
+      - postgres            # attendre que postgres démarre
 
   postgres:
     image: postgres:13

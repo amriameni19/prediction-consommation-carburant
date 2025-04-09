@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 # Obtenir le chemin absolu
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, 'models', 'rf_reg_model.pkl')
 SCALER_PATH = os.path.join(BASE_DIR, 'models', 'scaler.pkl')
 
@@ -14,26 +14,25 @@ try:
     scaler = joblib.load(SCALER_PATH)
 except Exception as e:
     raise Exception(f"Erreur lors du chargement des modèles: {str(e)}")
-
 def predict(features):
     try:
-        features_df = pd.DataFrame([[ 
+        # Créer un DataFrame avec les noms EXACTS utilisés à l'entraînement
+        features_df = pd.DataFrame([[
             features['weight'],
             features['acceleration'],
             features['displacement'],
             features['cylinders'],
             features['model_year'],
             features['horsepower']
-        ]],columns=['weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower'])
+        ]], columns=['weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower'])  # "model year" avec espace
 
-        # Standardisation des features
-
+        # Standardiser les données
         features_scaled = scaler.transform(features_df)
 
-        # Prédiction
+        # Faire la prédiction
         fuel_consumption_mpg = model_reg.predict(features_scaled)[0]
 
-       # Conversion de MPG à L/100km
+        # Conversion
         fuel_consumption_l_100km = 235.215 / fuel_consumption_mpg
 
         return {
