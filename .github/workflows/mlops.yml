@@ -1,45 +1,47 @@
-name: CI/CD MLOps
+name: CI/CD MLOps Pipeline
 
 on:
   push:
-    branches:
-      - main  # Utilise "main" si ta branche par défaut est main, sinon utilise "master"
+    branches: [main]
 
 jobs:
   train:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./Prediction_Consommation-de-carburant
 
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v2
-      
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Clear pip cache
-        run: |
-          rm -rf ~/.cache/pip
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
 
-      - name: List files in src directory
-        run: ls -R Prediction_Consommation-de-carburant/src/
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r src/requirements.txt
+        pip install mlflow==2.10.1 scikit-learn==1.4.0 pandas==2.0.3 numpy==1.24.4 joblib==1.3.2
 
-      - name: Install dependencies
-        run: |
-          pip install -r Prediction_Consommation-de-carburant/src/requirements.txt
+    - name: Verify structure
+      run: |
+        ls -R
+        echo "Current path: $(pwd)"
+        echo "MLflow version: $(python -c 'import mlflow; print(mlflow.__version__)')"
 
-      - name: Verify installation of mlflow
-        run: |
-          python -c "import mlflow; print('MLflow version:', mlflow.__version__)"
+    - name: Run training
+      run: python src/train_model.py
+      env:
+        CI: "true"
+        MLFLOW_TRACKING_URI: "file:///tmp/mlruns"
+        MLFLOW_EXPERIMENT_NAME: "Prediction_Consommation_Carburant"
 
-      - name: Run the training pipeline
-        run: python src/train_model.py
-        working-directory: ./Prediction_Consommation-de-carburant/src
-
-        env:
-          MLFLOW_TRACKING_URI: http://localhost:5000
-          MLFLOW_EXPERIMENT_NAME: Prediction_Consommation_Carburant
-
-      - name: Model trained and logged in MLflow
-        run: echo "Training terminé avec succès et modèle loggé depuis train_model.py"
+    - name: Upload MLflow artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: mlflow-artifacts
+        path: /tmp/mlruns
