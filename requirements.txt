@@ -1,4 +1,7 @@
+numpy
+pandas
+scikit-learn
+mlflow
+joblib
 fastapi
 uvicorn
-pydantic
-scikit-learn  # Si tu utilises scikit-learn pour la prédiction
