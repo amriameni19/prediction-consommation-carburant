@@ -1,14 +1,20 @@
+version: '3.8'
+
 services:
   mlflow:
-    build: .                # <--- build à partir de ton Dockerfile
+    build: .
     ports:
       - "5000:5000"
     volumes:
       - ./mlruns:/mlflow/mlruns
+    environment:
+      MLFLOW_TRACKING_URI: postgresql://mlflow:password@postgres:5432/mlflow_db
+      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:password@postgres:5432/mlflow_db
+      MLFLOW_ARTIFACT_ROOT: /mlflow/mlruns
+    depends_on:
+      - postgres
     networks:
       - mlflow_network
-    depends_on:
-      - postgres            # attendre que postgres démarre
 
   postgres:
     image: postgres:13
@@ -18,8 +24,13 @@ services:
       POSTGRES_DB: mlflow_db
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     networks:
       - mlflow_network
+
+volumes:
+  pgdata:
 
 networks:
   mlflow_network:
