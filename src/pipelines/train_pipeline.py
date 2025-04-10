@@ -1,6 +1,8 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
+from train_model import train_model
+
 
 # Arguments par défaut pour le DAG
 default_args = {
