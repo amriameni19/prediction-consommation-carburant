@@ -32,7 +32,7 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest src/tests/ -v
+        pytest src/test_predict/ -v
 
     - name: Train model
       env:
