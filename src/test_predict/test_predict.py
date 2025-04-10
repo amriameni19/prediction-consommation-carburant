@@ -1,4 +1,5 @@
-from predict_model import predict
+# Changement d'import
+from src.predict_model import predict  # Au lieu de 'from predict_model import predict'
 
 # Exemple de caractéristiques d’un véhicule
 sample_features = {
