@@ -25,7 +25,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r src/requirements.txt
         pip install pytest flake8
-        pip install -e .  # Installation en mode développement
 
     - name: Configure Python path
       run: |
@@ -36,8 +35,10 @@ jobs:
         flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
 
     - name: Run unit tests
+      env:
+         PYTHONPATH: ${{ github.workspace }}/src
       run: |
-        pytest src/test_predict/ -v
+         pytest src/test_predict/ -v
 
     - name: Set up MLflow
       run: |
