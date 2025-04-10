@@ -1,47 +1,26 @@
-name: CI/CD MLOps Pipeline
+name: MLOps Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]  # Le pipeline se déclenche à chaque push vers la branche "main"
 
 jobs:
   train:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./Prediction_Consommation-de-carburant
+    runs-on: ubuntu-latest  # Utilisation de l'environnement Ubuntu pour l'exécution
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3  # Récupérer le code source du dépôt
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v4  # Installer Python
       with:
-        python-version: "3.9"
+        python-version: 3.10  # Version de Python spécifiée
 
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
-        pip install -r src/requirements.txt
-        pip install mlflow==2.10.1 scikit-learn==1.4.0 pandas==2.0.3 numpy==1.24.4 joblib==1.3.2
+        pip install -r requirements.txt  # Installer les dépendances spécifiées dans requirements.txt
 
-    - name: Verify structure
+    - name: Run training with MLflow
       run: |
-        ls -R
-        echo "Current path: $(pwd)"
-        echo "MLflow version: $(python -c 'import mlflow; print(mlflow.__version__)')"
-
-    - name: Run training
-      run: python src/train_model.py
-      env:
-        CI: "true"
-        MLFLOW_TRACKING_URI: "file:///tmp/mlruns"
-        MLFLOW_EXPERIMENT_NAME: "Prediction_Consommation_Carburant"
-
-    - name: Upload MLflow artifacts
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: mlflow-artifacts
-        path: /tmp/mlruns
+        python src/train_model.py  # Exécuter le script Python qui entraîne le modèle avec MLflow
