@@ -1,18 +1,23 @@
-# Changement d'import
-from src.predict_model import predict  # Au lieu de 'from predict_model import predict'
+import sys
+import os
 
-# Exemple de caractéristiques d’un véhicule
+# Add the src directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from src.predict_model import predict  # Import after updating the path
+
+# Example vehicle features
 sample_features = {
-    'weight': 3000,         # poids
-    'acceleration': 12.0,   # accélération
-    'displacement': 200.0,  # cylindrée
-    'cylinders': 4,         # nombre de cylindres
-    'model_year': 76,       # année du modèle
-    'horsepower': 90.0      # puissance
+    'weight': 3000,         # weight
+    'acceleration': 12.0,   # acceleration
+    'displacement': 200.0,  # displacement
+    'cylinders': 4,         # cylinders
+    'model_year': 76,       # model year
+    'horsepower': 90.0      # horsepower
 }
 
-# Appel de la fonction
+# Call the function
 result = predict(sample_features)
 
-# Affichage du résultat
-print("Consommation réelle estimée (MPG) :", result['consommation_reelle'])
+# Display the result
+print("Estimated real fuel consumption (MPG):", result['consommation_reelle_mpg'])
