@@ -2,25 +2,26 @@ name: MLOps Pipeline
 
 on:
   push:
-    branches: [ main ]  # Le pipeline se déclenche à chaque push vers la branche "main"
+    branches:
+      - main
 
 jobs:
   train:
-    runs-on: ubuntu-latest  # Utilisation de l'environnement Ubuntu pour l'exécution
+    runs-on: ubuntu-latest  # Utilise la dernière version stable d'Ubuntu
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3  # Récupérer le code source du dépôt
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-    - name: Setup Python
-      uses: actions/setup-python@v4  # Installer Python
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.10  # Version de Python spécifiée
+        python-version: 3.10  # Assure-toi de spécifier une version stable de Python
 
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt  # Installer les dépendances spécifiées dans requirements.txt
+        pip install -r src/requirements.txt
 
-    - name: Run training with MLflow
+    - name: Run training script with MLflow
       run: |
-        python src/train_model.py  # Exécuter le script Python qui entraîne le modèle avec MLflow
+        python src/train_model.py
