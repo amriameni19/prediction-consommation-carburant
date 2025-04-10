@@ -13,7 +13,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Charger les données
-dataset_path = "data/Consommation-de-carburant_data.csv"
+dataset_path = "src/data/Consommation-de-carburant_data.csv"
 if not os.path.exists(dataset_path):
     raise FileNotFoundError(f"Le fichier {dataset_path} n'existe pas. Vérifiez le chemin.")
 
