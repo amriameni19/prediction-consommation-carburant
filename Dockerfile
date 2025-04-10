@@ -1,24 +1,20 @@
 # Utiliser l'image de base Python
-FROM python:3.8-slim
+FROM python:3.10-slim
 
-# Définir les variables d'environnement
-ENV MLFLOW_HOME=/mlflow
-ENV MLFLOW_VERSION=2.6.1
+ENV MLFLOW_HOME=/mlflow \
+    MLFLOW_VERSION=2.5.0
 
-# Installer les dépendances de MLflow
-RUN pip install --upgrade pip \
-    && pip install mlflow==2.5.0 \
-    && pip install psycopg2-binary
+RUN apt-get update && apt-get install -y gcc libpq-dev curl \
+    && pip install --upgrade pip \
+    && pip install mlflow==${MLFLOW_VERSION} psycopg2-binary \
+    && apt-get remove -y gcc \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-
-# Créer le répertoire pour l'application
 RUN mkdir -p $MLFLOW_HOME
-
-# Exposer le port de MLflow
-EXPOSE 5000
-
-# Définir le répertoire de travail
 WORKDIR $MLFLOW_HOME
 
-# Lancer MLflow en mode serveur
-CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]                                                                         
+EXPOSE 5000
+
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]
