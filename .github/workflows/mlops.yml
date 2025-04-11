@@ -43,6 +43,9 @@ jobs:
       run: |
         python src/train_model.py
 
+    - name: Clear GitHub Actions cache
+      run: actions/cache@v3
+
     - name: Archive MLflow results
       uses: actions/upload-artifact@v3
       with:
@@ -50,3 +53,4 @@ jobs:
         path: |
           mlruns/
           mlflow.db
+          
