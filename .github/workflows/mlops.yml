@@ -8,45 +8,61 @@ on:
 
 jobs:
   train:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
+    
     services:
-      mlflow:
+      mlflow-server:
         image: python:3.10
         ports:
           - "5000:5000"
         env:
           MLFLOW_TRACKING_URI: http://localhost:5000
+        volumes:
+          - ./mlruns:/mlruns
+          - ./mlflow.db:/mlflow.db
+        run: |
+          pip install mlflow
+          mlflow server \
+            --host 0.0.0.0 \
+            --port 5000 \
+            --backend-store-uri sqlite:///mlflow.db \
+            --default-artifact-root file:///mlruns
 
     steps:
-    - uses: actions/checkout@v3
-
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-
+    
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install -r src/requirements.txt
-        pip install mlflow scikit-learn pandas
-
-    - name: Start MLflow server
+        pip install mlflow scikit-learn pandas joblib
+    
+    - name: Wait for MLflow server
       run: |
-        nohup mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns &
-        sleep 5  # Give server time to start
-
+        echo "Waiting for MLflow server to start..."
+        while ! nc -z localhost 5000; do
+          sleep 1
+        done
+        echo "MLflow server is ready!"
+    
     - name: Run training
       env:
         MLFLOW_TRACKING_URI: http://localhost:5000
       run: |
         python src/train_model.py
-
-    - name: Archive MLflow results
-      uses: actions/upload-artifact@v3
+    
+    - name: Upload results
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: mlflow-results
+        name: mlflow-artifacts
         path: |
           mlruns/
           mlflow.db
+        retention-days: 5
