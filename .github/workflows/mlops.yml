@@ -71,4 +71,4 @@ jobs:
         path: |
           mlruns/
           mlflow.db
-        retention-days: 7  # Garde les artefacts pendant 3 jours
+        retention-days: 3  # Garde les artefacts pendant 3 jours
