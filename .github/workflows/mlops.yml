@@ -9,6 +9,7 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
+    
     services:
       mlflow:
         image: python:3.10
@@ -16,26 +17,33 @@ jobs:
           - "5000:5000"
         env:
           MLFLOW_TRACKING_URI: http://localhost:5000
-        run: |
-          pip install mlflow
-          nohup mlflow server --host 0.0.0.0 &
+        # REMOVED THE 'run' COMMAND FROM HERE
 
     steps:
     - uses: actions/checkout@v3
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+    
     - name: Install dependencies
       run: |
         pip install --upgrade pip
         pip install -r src/requirements.txt
         pip install mlflow scikit-learn pandas
+    
+    - name: Start MLflow server
+      run: |
+        nohup mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns &
+        sleep 5  # Give server time to start
+    
     - name: Run training
       env:
         MLFLOW_TRACKING_URI: http://localhost:5000
       run: |
         python src/train_model.py
+    
     - name: Archive MLflow results
       uses: actions/upload-artifact@v3
       with:
