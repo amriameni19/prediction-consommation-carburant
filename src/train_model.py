@@ -14,69 +14,70 @@ warnings.filterwarnings("ignore")
 
 def main():
     # Configuration MLflow
-    mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("Fuel_Consumption_Prediction")
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+    mlflow.set_experiment("Prediction_Carburant")
     
-    with mlflow.start_run(run_name="RF_Regression"):
-        # Chargement des données
-        dataset_path = "src/data/Consommation-de-carburant_data.csv"
-        donnees = pd.read_csv(dataset_path, sep=",")
+    with mlflow.start_run(run_name="Production"):
+        # ========== CHARGEMENT ==========
+        donnees = pd.read_csv("src/data/Consommation-de-carburant_data.csv")
         
-        # Préprocessing
-        donnees.replace('?', np.nan, inplace=True)
-        cols_numeric = ['mpg', 'weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']
-        for col in cols_numeric:
-            donnees[col] = pd.to_numeric(donnees[col], errors='coerce')
+        # ========== NETTOYAGE ==========
+        colonnes = ['mpg', 'weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']
+        donnees[colonnes] = donnees[colonnes].replace('?', np.nan)
+        donnees[colonnes] = donnees[colonnes].apply(pd.to_numeric, errors='coerce')
         
+        # ========== IMPUTATION ==========
         imputer = SimpleImputer(strategy='mean')
-        donnees[cols_numeric] = imputer.fit_transform(donnees[cols_numeric])
+        donnees[colonnes] = imputer.fit_transform(donnees[colonnes])
         
-        # Séparation des données
-        y = donnees['mpg']
+        # ========== PREPARATION ==========
         X = donnees[['weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']]
+        y = donnees['mpg']
         
-        # Standardisation
+        # ========== NORMALISATION ==========
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
         
-        # Entraînement
-        rf_reg = RandomForestRegressor(n_estimators=150, max_depth=10, random_state=42)
-        rf_reg.fit(X_train, y_train)
+        # ========== ENTRAINEMENT ==========
+        modele = RandomForestRegressor(
+            n_estimators=150,
+            max_depth=10,
+            random_state=42
+        )
+        modele.fit(X_train, y_train)
         
-        # Évaluation
-        y_pred = rf_reg.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred)
-        rmse = np.sqrt(mse)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
+        # ========== EVALUATION ==========
+        predictions = modele.predict(X_test)
+        metriques = {
+            "mae": mean_absolute_error(y_test, predictions),
+            "mse": mean_squared_error(y_test, predictions),
+            "rmse": np.sqrt(mean_squared_error(y_test, predictions)),
+            "r2": r2_score(y_test, predictions)
+        }
         
-        # Log des métriques
-        mlflow.log_metrics({
-            "mse": mse,
-            "rmse": rmse,
-            "mae": mae,
-            "r2": r2
-        })
-        
-        # Log des paramètres
+        # ========== ENREGISTREMENT ==========
+        # Paramètres
         mlflow.log_params({
             "n_estimators": 150,
             "max_depth": 10,
-            "test_size": 0.2,
+            "taille_test": 0.2,
             "random_state": 42
         })
         
+        # Métriques
+        mlflow.log_metrics(metriques)
+        
         # Sauvegarde des artefacts
         os.makedirs("models", exist_ok=True)
-        joblib.dump(rf_reg, "models/rf_reg_model.pkl")
+        joblib.dump(modele, "models/modele.pkl")
         joblib.dump(scaler, "models/scaler.pkl")
         
-        # Log des modèles et artefacts
-        mlflow.sklearn.log_model(rf_reg, "model")
+        # Log MLflow
+        mlflow.sklearn.log_model(modele, "modele")
         mlflow.log_artifacts("models")
         
-        print(f"Run ID: {mlflow.active_run().info.run_id}")
+        print("✅ Entraînement terminé! Résultats disponibles dans MLflow")
 
 if __name__ == "__main__":
     main()

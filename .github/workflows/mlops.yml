@@ -1,4 +1,4 @@
-name: MLOps Pipeline
+name: Pipeline MLOps
 
 on:
   push:
@@ -6,51 +6,69 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
-  train:
-    runs-on: ubuntu-latest
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true  # Annule les exécutions en double
 
+jobs:
+  entrainement:
+    runs-on: ubuntu-24.04  # Utilise le runner Ubuntu 24.04
+    
     services:
-      mlflow:
+      serveur-mlflow:
         image: python:3.10
         ports:
-          - "5000:5000"
+          - "5000:5000"  # Expose le port 5000
         env:
           MLFLOW_TRACKING_URI: http://localhost:5000
+        volumes:
+          - ./mlruns:/mlruns  # Monte le dossier mlruns
+          - ./mlflow.db:/mlflow.db  # Monte la base de données
 
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python
+    # Étape 1: Récupération du code
+    - name: Récupérer le code
+      uses: actions/checkout@v4
+    
+    # Étape 2: Installation de Python
+    - name: Installer Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-
-    - name: Install dependencies
+    
+    # Étape 3: Installation des dépendances
+    - name: Installer les dépendances
       run: |
-        pip install --upgrade pip
-        pip install -r src/requirements.txt
-        pip install mlflow scikit-learn pandas
-
-    - name: Start MLflow server
+        python -m pip install --upgrade pip
+        if [ -f src/requirements.txt ]; then
+          pip install -r src/requirements.txt
+        fi
+        pip install mlflow==2.14.0 scikit-learn==1.4.0 pandas==2.2.1 joblib==1.3.2
+    
+    # Étape 4: Démarrer le serveur MLflow
+    - name: Démarrer MLflow
       run: |
-        nohup mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns &
-        sleep 5  # Give server time to start
-
-    - name: Run training
+        pip install mlflow
+        nohup mlflow server \
+          --host 0.0.0.0 \
+          --port 5000 \
+          --backend-store-uri sqlite:///mlflow.db \
+          --default-artifact-root ./mlruns &
+        sleep 10  # Attend que le serveur démarre
+        
+    # Étape 5: Exécuter l'entraînement
+    - name: Entraîner le modèle
       env:
         MLFLOW_TRACKING_URI: http://localhost:5000
       run: |
         python src/train_model.py
-
-    - name: Clear GitHub Actions cache
-      run: actions/cache@v3
-
-    - name: Archive MLflow results
-      uses: actions/upload-artifact@v3
+    
+    # Étape 6: Sauvegarder les résultats
+    - name: Sauvegarder les artefacts
+      uses: actions/upload-artifact@v4
       with:
-        name: mlflow-results
+        name: resultats-mlflow
         path: |
           mlruns/
           mlflow.db
-          
+        retention-days: 7  # Garde les artefacts pendant 3 jours
