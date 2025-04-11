@@ -2,36 +2,27 @@ version: '3.8'
 
 services:
   mlflow:
-    build: .
+    image: python:3.10
     ports:
       - "5000:5000"
     volumes:
-      - ./mlruns:/mlflow/mlruns
-    environment:
-      MLFLOW_TRACKING_URI: postgresql://mlflow:password@postgres:5432/mlflow_db
-      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:password@postgres:5432/mlflow_db
-      MLFLOW_ARTIFACT_ROOT: /mlflow/mlruns
-    depends_on:
-      - postgres
-    networks:
-      - mlflow_network
-
-  postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: mlflow
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mlflow_db
+      - ./mlruns:/mlruns
+      - ./mlflow.db:/mlflow.db
+    command: >
+      sh -c "pip install mlflow &&
+             mlflow server --host 0.0.0.0 
+                          --backend-store-uri sqlite:///mlflow.db 
+                          --default-artifact-root file:///mlruns"
+    
+  model-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.model
     ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - mlflow_network
+      - "8000:8000"
+    depends_on:
+      - mlflow
 
 volumes:
-  pgdata:
-
-networks:
-  mlflow_network:
-    driver: bridge
+  mlruns:
+  mlflow-db:

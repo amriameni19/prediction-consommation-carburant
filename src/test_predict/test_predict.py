@@ -1,23 +1,16 @@
-import sys
-import os
+from predict_model import predict
 
-# Add the src directory to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+def test_predict_model():
+    sample_features = {
+        'weight': 3000,
+        'acceleration': 12.0,
+        'displacement': 200.0,
+        'cylinders': 4,
+        'model_year': 76,
+        'horsepower': 90.0
+    }
 
-from src.predict_model import predict  # Import after updating the path
+    result = predict(sample_features)
 
-# Example vehicle features
-sample_features = {
-    'weight': 3000,         # weight
-    'acceleration': 12.0,   # acceleration
-    'displacement': 200.0,  # displacement
-    'cylinders': 4,         # cylinders
-    'model_year': 76,       # model year
-    'horsepower': 90.0      # horsepower
-}
-
-# Call the function
-result = predict(sample_features)
-
-# Display the result
-print("Estimated real fuel consumption (MPG):", result['consommation_reelle_mpg'])
+    assert 'consommation_reelle' in result
+    assert isinstance(result['consommation_reelle'], float)

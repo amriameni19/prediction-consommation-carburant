@@ -1,3 +1,5 @@
+import mlflow
+import mlflow.sklearn
 import joblib
 import numpy as np
 import pandas as pd
@@ -6,97 +8,75 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import mean_squared_error, r2_score  # Ajout de l'importation manquante
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import warnings
-
-# Désactiver les avertissements
 warnings.filterwarnings("ignore")
 
-# Charger les données
-dataset_path = "src/data/Consommation-de-carburant_data.csv"
-if not os.path.exists(dataset_path):
-    raise FileNotFoundError(f"Le fichier {dataset_path} n'existe pas. Vérifiez le chemin.")
+def main():
+    # Configuration MLflow
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("Fuel_Consumption_Prediction")
+    
+    with mlflow.start_run(run_name="RF_Regression"):
+        # Chargement des données
+        dataset_path = "src/data/Consommation-de-carburant_data.csv"
+        donnees = pd.read_csv(dataset_path, sep=",")
+        
+        # Préprocessing
+        donnees.replace('?', np.nan, inplace=True)
+        cols_numeric = ['mpg', 'weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']
+        for col in cols_numeric:
+            donnees[col] = pd.to_numeric(donnees[col], errors='coerce')
+        
+        imputer = SimpleImputer(strategy='mean')
+        donnees[cols_numeric] = imputer.fit_transform(donnees[cols_numeric])
+        
+        # Séparation des données
+        y = donnees['mpg']
+        X = donnees[['weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']]
+        
+        # Standardisation
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+        
+        # Entraînement
+        rf_reg = RandomForestRegressor(n_estimators=150, max_depth=10, random_state=42)
+        rf_reg.fit(X_train, y_train)
+        
+        # Évaluation
+        y_pred = rf_reg.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        
+        # Log des métriques
+        mlflow.log_metrics({
+            "mse": mse,
+            "rmse": rmse,
+            "mae": mae,
+            "r2": r2
+        })
+        
+        # Log des paramètres
+        mlflow.log_params({
+            "n_estimators": 150,
+            "max_depth": 10,
+            "test_size": 0.2,
+            "random_state": 42
+        })
+        
+        # Sauvegarde des artefacts
+        os.makedirs("models", exist_ok=True)
+        joblib.dump(rf_reg, "models/rf_reg_model.pkl")
+        joblib.dump(scaler, "models/scaler.pkl")
+        
+        # Log des modèles et artefacts
+        mlflow.sklearn.log_model(rf_reg, "model")
+        mlflow.log_artifacts("models")
+        
+        print(f"Run ID: {mlflow.active_run().info.run_id}")
 
-donnees = pd.read_csv(dataset_path, sep=",")
-
-# Remplacer les '?' par NaN
-donnees.replace('?', np.nan, inplace=True)
-
-# Convertir les colonnes numériques
-cols_numeric = ['mpg', 'weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']
-for col in cols_numeric:
-    donnees[col] = pd.to_numeric(donnees[col], errors='coerce')
-
-# Gestion des valeurs manquantes
-imputer = SimpleImputer(strategy='mean')
-donnees[cols_numeric] = imputer.fit_transform(donnees[cols_numeric])
-
-# Créer la variable cible de régression (mpg)
-y_regression = donnees['mpg']  # Cible pour la régression
-X = donnees[['weight', 'acceleration', 'displacement', 'cylinders', 'model year', 'horsepower']]  # Variables prédictives
-
-# Standardisation des données
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# Séparation des données en ensembles d'entraînement et de test
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_regression, test_size=0.2, random_state=42)
-
-# Entraînement du modèle Random Forest Regressor
-rf_reg = RandomForestRegressor(n_estimators=100, random_state=42)
-rf_reg.fit(X_train, y_train)
-
-# Prédictions et évaluation
-y_pred = rf_reg.predict(X_test)
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-# Afficher les résultats
-print(f"Erreur quadratique moyenne pour Random Forest (régression) : {mse:.4f}")
-print(f"Coefficient de détermination R² pour Random Forest : {r2:.4f}")
-
-# Création du dossier de sauvegarde des modèles
-models_dir = "models"
-os.makedirs(models_dir, exist_ok=True)
-
-# Sauvegarde du modèle
-joblib.dump(rf_reg, os.path.join(models_dir, 'rf_reg_model.pkl'))
-joblib.dump(scaler, os.path.join(models_dir, 'scaler.pkl'))
-
-print("\nLe modèle a été sauvegardé avec succès.")
-
-
-import mlflow
-import mlflow.sklearn
-import joblib
-import os
-
-# 1️⃣ Définir l'URI de tracking (MLflow UI)
-mlflow.set_tracking_uri("http://localhost:5000")
-
-# 2️⃣ Créer une expérience
-mlflow.set_experiment("Prediction_Consommation_Carburant")
-
-# 3️⃣ Démarrer un run
-with mlflow.start_run():
-    # Log des hyperparamètres (si besoin)
-    mlflow.log_param("n_estimators", 100)  # Exemple pour RandomForest
-    mlflow.log_param("max_depth", 10)
-
-    # 🎯 Charger ou entraîner ton modèle
-    models_dir = "models"
-    os.makedirs(models_dir, exist_ok=True)
-
-    # 🔹 Enregistrer les modèles
-    joblib.dump(rf_reg, os.path.join(models_dir, 'rf_reg_model.pkl'))
-    joblib.dump(scaler, os.path.join(models_dir, 'scaler.pkl'))
-
-    # 🔹 Log des modèles dans MLflow
-    mlflow.sklearn.log_model(rf_reg, "rf_reg_model")
-    mlflow.sklearn.log_model(scaler, "scaler_model")
-
-    # 🔹 Enregistrer les fichiers comme artefacts
-    mlflow.log_artifact(os.path.join(models_dir, 'rf_reg_model.pkl'))
-    mlflow.log_artifact(os.path.join(models_dir, 'scaler.pkl'))
-
-    print("✅ Modèles et artefacts enregistrés avec succès dans MLflow ! 🚀") 
+if __name__ == "__main__":
+    main()
